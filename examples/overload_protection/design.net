@@ -1,0 +1,91 @@
+* Overload thermal-simulation protection unit
+* Rungs: 0.5 A per light-overload pulse, 1.0 A per heavy-overload pulse.
+* Level 1 (2.0 A): relay 1 closes -> overheat lamp.
+* Level 2 (2.5 A): relay 2 closes -> alarm.
+* Saturates at 2.5 A; RESET clears everything.
+*
+* Stimulus below is a demo: IH once at 1 ms, IL at 21/46/71/96 ms,
+* RESET at 110 ms. Replace the three PULSE sources with buttons in the lab.
+VDD vdd 0 DC 5
+VIH ih 0 PULSE(0 5 1m 10u 10u 2m 1000m)
+VIL il 0 PULSE(0 5 21m 10u 10u 2m 25m)
+VRST rst 0 PULSE(5 0 110m 10u 10u 1000m 2000m)
+* accumulator (one unit = 0.5 A) and the next-state mux
+AU1 clk rst vdd vdd 0 n0 n1 n2m 0 q0 q1 q2 q3 rco 0 vdd 74LS161
+AU2 0 ih n0a n0b n1a n1b n2 n2 0 0 n0 n1 n2m nu4 0 vdd 74LS157
+* thresholds: u >= 4 (2.0 A) and u >= 5 (2.5 A)
+AU3 q0 0 q1 0 q2 vdd 0 0 0 0 vdd g1a g1b g1c 0 vdd 74LS85
+AU4 q0 vdd q1 0 q2 vdd 0 0 0 0 vdd g2a g2b g2c 0 vdd 74LS85
+* saturating next-state logic: n = min(u+1, 5) / min(u+2, 5)
+AU5 q0 nq0 0 vdd 74LS04
+AU6 q2 nq2 0 vdd 74LS04
+AU7 q1 nq1 0 vdd 74LS04
+AU8 z n1b 0 vdd 74LS04
+AU9 g1b ge1 0 vdd 74LS04
+AU10 g2b ge2 0 vdd 74LS04
+AU11 il nIL 0 vdd 74LS04
+AU12 ih nIH 0 vdd 74LS04
+AU13 nIL nIH clk 0 vdd 74LS00
+AU14 q1 q0 t0 0 vdd 74LS00
+AU15 q1 t0 t1 0 vdd 74LS00
+AU16 q0 t0 t2 0 vdd 74LS00
+AU17 t1 t2 xor 0 vdd 74LS00
+AU18 nq2 xor ux 0 vdd 74LS00
+AU19 ux ux n1a 0 vdd 74LS00
+AU20 nq2 nq0 X 0 vdd 74LS00
+AU21 q2 nq1 Y 0 vdd 74LS00
+AU22 X Y n0a 0 vdd 74LS00
+AU23 nq2 nq1 z 0 vdd 74LS00
+AU24 nq2 t0 n2 0 vdd 74LS00
+* integer digit = u/2 : D=0 C=0 B=q2 A=q1
+AU25 vdd vdd 0 0 q2 q1 vdd oa1 ob1 oc1 od1 oe1 of1 og1 0 vdd 74LS48
+AU26 oa1 na1 0 vdd 74LS04
+AU27 ob1 nb1 0 vdd 74LS04
+AU28 oc1 nc1 0 vdd 74LS04
+AU29 od1 nd1 0 vdd 74LS04
+AU30 oe1 ne1 0 vdd 74LS04
+AU31 of1 nf1 0 vdd 74LS04
+AU32 og1 ng1 0 vdd 74LS04
+R1A na1 sa1 220
+R1B nb1 sb1 220
+R1C nc1 sc1 220
+R1D nd1 sd1 220
+R1E ne1 se1 220
+R1F nf1 sf1 220
+R1G ng1 sg1 220
+RDP1 rdp1 0 220
+AD1 sa1 sb1 sc1 sd1 se1 sf1 sg1 rdp1 vdd SEG
+* fraction digit = 0 or 5 : D=0 C=q0 B=0 A=q0
+AU33 vdd vdd 0 q0 0 q0 vdd oa2 ob2 oc2 od2 oe2 of2 og2 0 vdd 74LS48
+AU34 oa2 na2 0 vdd 74LS04
+AU35 ob2 nb2 0 vdd 74LS04
+AU36 oc2 nc2 0 vdd 74LS04
+AU37 od2 nd2 0 vdd 74LS04
+AU38 oe2 ne2 0 vdd 74LS04
+AU39 of2 nf2 0 vdd 74LS04
+AU40 og2 ng2 0 vdd 74LS04
+R2A na2 sa2 220
+R2B nb2 sb2 220
+R2C nc2 sc2 220
+R2D nd2 sd2 220
+R2E ne2 se2 220
+R2F nf2 sf2 220
+R2G ng2 sg2 220
+AD2 sa2 sb2 sc2 sd2 se2 sf2 sg2 vdd vdd SEG
+* relay 1 (overheat) and relay 2 (alarm) drivers
+RB1 ge1 b1 4.7k
+RB2 ge2 b2 4.7k
+Q1 coil1 b1 0 Q2N2222
+Q2 coil2 b2 0 Q2N2222
+XRK1 vdd coil1 vdd k1_out @RELAY RCOIL=400 VON=3 VOFF=1
+XRK2 vdd coil2 vdd k2_out @RELAY RCOIL=400 VON=3 VOFF=1
+R1L k1_out l1a 330
+D1L l1a 0 DLED
+R2Z k2_out z2a 330
+D2Z z2a 0 DLED
+RNU4 nu4 0 10k
+RGN1 ge1 0 10k
+RGN2 ge2 0 10k
+.model Q2N2222 NPN(IS=2.05e-13 BF=296 NF=1.1 VAF=10 IKF=0.077 ISE=1.45e-13 RB=4 RC=0.43 RE=0.086 CJE=1.1e-11 CJC=3.2e-11 TF=3e-10 TR=3.8e-7)
+.model DLED D(IS=1e-19 N=1.8 RS=10 CJO=2e-12)
+.end

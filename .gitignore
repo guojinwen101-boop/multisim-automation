@@ -1,0 +1,42 @@
+# Build output
+bin/
+obj/
+*.exe
+*.pdb
+*.dll
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+
+# Multisim artefacts
+*.ms14
+*.ms7
+*.ms14.xml
+*.sim.log
+*.raw
+*.net.txt
+
+# Local template packs extracted from a licensed Multisim install.
+# These are NEVER redistributable; keep them out of the repository.
+templates/
+template_pack/
+local_templates*/
+auto_templates*/
+template_probe/
+
+# Simulation output
+*.csv
+!python/tests/data/*.csv
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
