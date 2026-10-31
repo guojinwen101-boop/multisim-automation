@@ -20,7 +20,7 @@
 ## 安装
 
 ```bat
-git clone <repo-url>
+git clone https://github.com/guojinwen101-boop/multisim-automation.git
 cd multisim-automation
 
 csharp\build.cmd        :: 用本机 Multisim 的类型库生成 interop 并编译 msctl
